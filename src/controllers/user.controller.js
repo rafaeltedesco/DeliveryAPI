@@ -47,7 +47,6 @@ exports.create = (req, res)=> {
 }
 
 exports.findOne = (req, res)=> {
-  let {id} = req.params
   let user = req.user
   return res.status(200).json({
     'status': 'success',
