@@ -1,7 +1,28 @@
 
 let users = []
 
+
+exports.checkId = (req, res, next, id) => {
+  let user = users.find(user=>user.id == id)
+  if (!user) {
+    return res.status(404).json({
+      'status': 'fail',
+      'message': 'Invalid Id'
+    })
+  }
+  req.user = user
+  next()
+}
+
 exports.findAll = (req, res)=> {
+  if (users.length < 1) {
+    return res.status(404).json({
+      'status': 'fail',
+      'message': 'There are no users registered',
+      'results': users.length,
+      'data': users
+    })
+  }
   return res.status(200).json({
     'status': 'success',
     'message': 'Listing all users',
@@ -27,7 +48,7 @@ exports.create = (req, res)=> {
 
 exports.findOne = (req, res)=> {
   let {id} = req.params
-  let user = users.find(user=> user.id == id)
+  let user = req.user
   return res.status(200).json({
     'status': 'success',
     'message': `User ${user.name} found`,
@@ -63,6 +84,6 @@ exports.update = (req, res)=> {
   return res.status(200).json({
     'status': 'success',
     'message': `User: ${previousUser.name} was updated to ${user.name}!`,
-    'data': users[id]
+    'data': user
   })
 }
