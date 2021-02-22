@@ -1,88 +1,100 @@
 
-let users = []
+const User = require('./../models/user.model')
+const Status = require('./../utils/requestStatus')
 
-
-exports.checkId = (req, res, next, id) => {
-  let user = users.find(user=>user.id == id)
-  if (!user) {
-    return res.status(404).json({
-      'status': 'fail',
-      'message': 'Invalid Id'
-    })
-  }
-  req.user = user
-  next()
-}
-
-exports.findAll = (req, res)=> {
-  if (users.length < 1) {
-    return res.status(404).json({
-      'status': 'fail',
-      'message': 'There are no users registered',
+exports.findAll = async (req, res)=> {
+  try {
+    const users = await User.find()
+    if (!users.length) throw new Error('There are no users registered.')
+    return res.status(Status.OK).json({
+      'status': 'success',
+      'message': 'Listing all users',
       'results': users.length,
       'data': users
     })
   }
-  return res.status(200).json({
-    'status': 'success',
-    'message': 'Listing all users',
-    'results': users.length,
-    'data': users
-  })
-}
-
-
-exports.create = (req, res)=> {
-  let id
-  id = users.length === 0 ? 1 : users[users.length-1].id + 1
-  let {name} = req.body
-  let newUser = {id, name}
-  users.push(newUser)
-
-  return res.status(201).json({
-    'status': 'success',
-    'message': `New user ${newUser.name} Added`,
-    'data': users
-  })
-}
-
-exports.findOne = (req, res)=> {
-  let user = req.user
-  return res.status(200).json({
-    'status': 'success',
-    'message': `User ${user.name} found`,
-    'data': user
-  })
-}
-
-exports.delete = (req, res)=> {
-  let {id} = req.params
-  let userToDelete
-  users = users.filter(user=> {
-    if (user.id != id) {
-      return user
-    }
-    userToDelete = user
-  }) 
-    return res.status(200).json({
-      'status': 'success',
-      'message': `User ${userToDelete.name} deleted!`,
+  catch(err) {
+    return res.status(Status.NOT_FOUND).json({
+      message: err.message
     })
+  }
 }
 
-exports.update = (req, res)=> {
-  let {id} = req.params
-  let previousUser
-  let user = users.find(user => { 
-    if (user.id==id) {
-      previousUser = Object.assign({}, user)
-      user.name = req.body.name
-      return user
-    }
-  })
-  return res.status(200).json({
-    'status': 'success',
-    'message': `User: ${previousUser.name} was updated to ${user.name}!`,
-    'data': user
-  })
+
+exports.create = async (req, res)=> {
+  try {
+    let { name, email, password } = req.body
+  
+    const newUser = await User.create({name, email, password})
+  
+    return res.status(Status.CREATED_STATUS).json({
+      status: 'success',
+      message: `New user ${newUser.name} Added`,
+      data: newUser
+    })
+  }
+  catch(err) {
+    return res.status(Status.BAD_REQUEST).json({
+      message: err.message
+    })
+  }
+}
+
+exports.findOne = async (req, res)=> {
+  try {
+    let { id } = req.params
+  
+    const user = await User.findById(id)
+    
+    if (!user) throw new Error(`User Id: ${id} not Found`)
+  
+    return res.status(Status.CREATED_STATUS).json({
+      'status': 'success',
+      'message': `User ${user.name} found`,
+      'data': user
+    })
+  }
+  catch(err) {
+    return res.status(Status.NOT_FOUND).json({
+      message: err.message
+    })
+  }
+}
+
+exports.delete = async (req, res)=> {
+  try {
+    let {id} = req.params
+    
+    const user = await User.deleteOne({_id:id})
+    if (!user.deletedCount) throw new Error('User Not Found')
+    return res.status(Status.OK).json({
+      'status': 'success',
+      'message': `User deleted!`,
+    })
+  }
+  catch(err) {
+    return res.status(Status.BAD_REQUEST).json({
+      message: err.message
+    })
+  }
+}
+
+exports.update = async (req, res)=> {
+  try {
+    let {id} = req.params
+  
+    const user = await User.updateOne({_id: id}, req.body)
+    if (!user.nModified) throw new Error(`Cannot update`)
+  
+    return res.status(Status.OK).json({
+      'status': 'success',
+      'message': `User was updated!`,
+      'data': user
+    })
+  }
+  catch(err) {
+    return res.status(Status.BAD_REQUEST).json({
+      message: err.message
+    })
+  }
 }

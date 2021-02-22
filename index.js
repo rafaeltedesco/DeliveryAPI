@@ -1,4 +1,5 @@
-require('dotenv').config()
+const { config }  = require('./config')
+require('./src/database/db')
 const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
@@ -10,6 +11,6 @@ app.use(cors())
 require('./src/routes/routes')(app)
 
 
-app.listen(process.env.PORT, ()=> {
+app.listen(config.PORT, ()=> {
   console.log('Up and Running')
 })
