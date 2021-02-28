@@ -12,7 +12,6 @@ const generateToken = (params={})=> {
   })
 }
 
-
 exports.findAll = async (req, res)=> {
   try {
     const users = await User.find()

@@ -13,7 +13,6 @@ const blackListSchema = new mongoose.Schema({
     default: Date.now,
     expires: config.TIMER
   },
-  
 })
 
 module.exports = mongoose.model('BlackListModel', blackListSchema)
