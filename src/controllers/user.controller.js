@@ -45,7 +45,7 @@ exports.findOne = catchAsync(async (req, res, next)=> {
     const user = await User.findById(id)
     
     if (!user) throw new AppError(`User Id: ${id} not Found`, Status.NOT_FOUND)
-  
+    
     return res.status(Status.CREATED_STATUS).json({
       'status': 'success',
       'message': `User ${user.name} found`,
