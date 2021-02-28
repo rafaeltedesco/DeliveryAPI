@@ -4,7 +4,8 @@ const Status = require('./../utils/requestStatus')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 const { config } = require('./../../config')
-
+const catchAsync = require('./../utils/catchAsync')
+const AppError = require('./../utils/appError')
 
 const generateToken = (params={})=> {
   return jwt.sign({params}, config.SECRET, {
@@ -12,27 +13,21 @@ const generateToken = (params={})=> {
   })
 }
 
-exports.findAll = async (req, res)=> {
-  try {
+exports.findAll = catchAsync(async (req, res, next)=> {
     const users = await User.find()
-    if (!users.length) throw new Error('There are no users registered.')
+    if (!users.length) {
+      throw new AppError('There are no users registered.', Status.NOT_FOUND)
+    }
     return res.status(Status.OK).json({
       'status': 'success',
       'message': 'Listing all users',
       'results': users.length,
       'data': users
     })
-  }
-  catch(err) {
-    return res.status(Status.NOT_FOUND).json({
-      message: err.message
-    })
-  }
-}
+})
 
 
-exports.create = async (req, res)=> {
-  try {
+exports.create = catchAsync(async (req, res, next)=> {
     let { name, email, password } = req.body
   
     const newUser = await User.create({name, email, password})
@@ -42,115 +37,72 @@ exports.create = async (req, res)=> {
       message: `New user ${newUser.name} Added`,
       data: newUser
     })
-  }
-  catch(err) {
-    return res.status(Status.BAD_REQUEST).json({
-      message: err.message
-    })
-  }
-}
+})
 
-exports.findOne = async (req, res)=> {
-  try {
+exports.findOne = catchAsync(async (req, res, next)=> {
     let { id } = req.params
   
     const user = await User.findById(id)
     
-    if (!user) throw new Error(`User Id: ${id} not Found`)
+    if (!user) throw new AppError(`User Id: ${id} not Found`, Status.NOT_FOUND)
   
     return res.status(Status.CREATED_STATUS).json({
       'status': 'success',
       'message': `User ${user.name} found`,
       'data': user
     })
-  }
-  catch(err) {
-    return res.status(Status.NOT_FOUND).json({
-      message: err.message
-    })
-  }
-}
+})
 
-exports.delete = async (req, res)=> {
-  try {
+exports.delete = catchAsync(async (req, res, next)=> {
     let {id} = req.params
     
     const user = await User.deleteOne({_id:id})
-    if (!user.deletedCount) throw new Error('User Not Found')
+    if (!user.deletedCount) throw new AppError('User Not Found', Status.NOT_FOUND)
     return res.status(Status.OK).json({
       'status': 'success',
       'message': `User deleted!`,
     })
-  }
-  catch(err) {
-    return res.status(Status.BAD_REQUEST).json({
-      message: err.message
-    })
-  }
-}
+})
 
-exports.update = async (req, res)=> {
-  try {
+exports.update = catchAsync(async (req, res, next)=> {
     let {id} = req.params
-  
-    const user = await User.updateOne({_id: id}, req.body)
-    if (!user.nModified) throw new Error(`Cannot update`)
+    let { name, email } = req.body
+    const user = await User.updateOne({_id: id}, {name, email})
+    if (!user.nModified) throw new AppError(`Cannot update`, Status.BAD_REQUEST)
   
     return res.status(Status.OK).json({
       'status': 'success',
       'message': `User was updated!`,
       'data': user
     })
-  }
-  catch(err) {
-    return res.status(Status.BAD_REQUEST).json({
-      message: err.message
-    })
-  }
-}
+})
 
 
-exports.getAllByName = async (req, res)=> {
-  try {
+exports.getAllByName = catchAsync(async (req, res, next)=> {
     let { name } = req.query
     const users = await User.find({ name: { '$regex': `.*${name}.*`, '$options': 'i' } })
 
-    if (!users.length) throw new Error('Data not Found!')
+    if (!users.length) throw new AppError('Data not Found!', Status.NOT_FOUND)
 
     return res.status(Status.OK).json({
       status: 'ok',
       message: `${users.length} users founded`,
       data: users
     })
-
-  }
-  catch(err) {
-    return res.status(Status.BAD_REQUEST).json({
-      status: 'fail',
-      message: err.message
-    })
-  }
-}
+})
 
 
-exports.userLogin = async (req, res)=> {
-  try {
+exports.userLogin = catchAsync(async (req, res, next)=> {
     let { email, password } = req.body
 
     const user = await User.findOne({email: email}).select('+password')
 
     if (!user) {
-      return res.status(Status.NOT_FOUND).json({
-        status: 'fail',
-        message: 'Data Not Found!'
-      })
+      throw new AppError('User not found!', Status.NOT_FOUND)
     }
 
     if (!await bcrypt.compare(password, user.password)) {
-      return res.status(Status.BAD_REQUEST).json({
-        status: 'fail',
-        message: 'Invalid Password!'
-      })
+      throw new AppError('Invalid email or password!', Status.UNAUTHORIZED)
     }
 
     user.password = undefined
@@ -164,13 +116,4 @@ exports.userLogin = async (req, res)=> {
         token
       }
     })
-
-  }
-  catch(err) {
-    return res.status(Status.BAD_REQUEST).json({
-      status: 'fail',
-      message: err.message
-    })
-
-  }
-}
+})

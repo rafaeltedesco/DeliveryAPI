@@ -3,27 +3,21 @@ const User = require('./../models/user.model')
 const { config } = require('./../../config')
 const Status = require('./../utils/requestStatus')
 const BlackList = require('./../models/blacklist.model')
+const catchAsync = require('./../utils/catchAsync')
+const AppError = require('./../utils/appError')
 
-
-const checkUserToken = async (req, res, next)=> {
-  try {
+const checkUserToken = catchAsync(async (req, res, next)=> {
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
-    if (!token) return res.status(Status.UNAUTHORIZED).json({
-      status: 'fail',
-      message: 'Unauthorized access. A token must been sent'
-    })
+    if (!token) {
+      throw new AppError('Unauthorized access. A token must been sent', Status.UNAUTHORIZED) 
+    }
+       
     const user = await jwt.verify(token, config.SECRET)
+
     req.user = user
     next()
-  }
-  catch(err) {
-    return res.status(Status.UNAUTHORIZED).json({
-      status: 'fail',
-      message: err.message
-    })
-  }
-}
+  })
 
 const authMiddleware = (permissions=[]) => {
  
