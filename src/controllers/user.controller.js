@@ -2,7 +2,6 @@
 const User = require('./../models/user.model')
 const Status = require('./../utils/requestStatus')
 const jwt = require('jsonwebtoken')
-const bcrypt = require('bcrypt')
 const { config } = require('./../../config')
 const catchAsync = require('./../utils/catchAsync')
 const AppError = require('./../utils/appError')
@@ -101,9 +100,10 @@ exports.userLogin = catchAsync(async (req, res, next)=> {
       throw new AppError('User not found!', Status.NOT_FOUND)
     }
 
-    if (!await bcrypt.compare(password, user.password)) {
+    if (! await user.isValidPassword(password)) {
       throw new AppError('Invalid email or password!', Status.UNAUTHORIZED)
     }
+
 
     user.password = undefined
     const token = generateToken({id: user._id})

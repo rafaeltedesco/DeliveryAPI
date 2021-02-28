@@ -32,6 +32,14 @@ userSchema.methods.generatePassword = (password) => {
   return bcrypt.hashSync(password, bcrypt.genSaltSync(10))
 }
 
+userSchema.methods.isValidPassword = async function(password) {
+  try {
+    return await bcrypt.compare(password.toString(), this.password)
+  }
+  catch(err) {
+    console.log(err.message)
+  }
+}
 userSchema.pre('save', async function() {
   this.password = await this.generatePassword(this.password)
 })
