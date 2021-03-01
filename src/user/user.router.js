@@ -6,6 +6,7 @@ const {ROLE_TYPES} = require('./../utils/constants')
 const router = express.Router()
 
 router.route('/search')
+.all(checkUserToken, authMiddleware([ROLE_TYPES.MANAGER]))
 .get(userController.getAllByName)
 
 
