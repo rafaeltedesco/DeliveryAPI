@@ -10,7 +10,7 @@ const checkUserToken = catchAsync(async (req, res, next)=> {
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
     if (!token) {
-      throw new AppError('Unauthorized access. A token must been sent', Status.UNAUTHORIZED) 
+      next(AppError('Unauthorized access. A token must been sent', Status.UNAUTHORIZED))
     }
        
     const user = await jwt.verify(token, config.SECRET)

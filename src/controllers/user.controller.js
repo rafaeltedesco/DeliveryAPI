@@ -15,7 +15,7 @@ const generateToken = (params={})=> {
 exports.findAll = catchAsync(async (req, res, next)=> {
     const users = await User.find()
     if (!users.length) {
-      throw new AppError('There are no users registered.', Status.NOT_FOUND)
+      next(new AppError('There are no users registered.', Status.NOT_FOUND))
     }
     return res.status(Status.OK).json({
       'status': 'success',
@@ -43,7 +43,7 @@ exports.findOne = catchAsync(async (req, res, next)=> {
   
     const user = await User.findById(id)
     
-    if (!user) throw new AppError(`User Id: ${id} not Found`, Status.NOT_FOUND)
+    if (!user) next(new AppError(`User Id: ${id} not Found`, Status.NOT_FOUND))
     
     return res.status(Status.CREATED_STATUS).json({
       'status': 'success',
@@ -56,7 +56,7 @@ exports.delete = catchAsync(async (req, res, next)=> {
     let {id} = req.params
     
     const user = await User.deleteOne({_id:id})
-    if (!user.deletedCount) throw new AppError('User Not Found', Status.NOT_FOUND)
+    if (!user.deletedCount) next(new AppError('User Not Found', Status.NOT_FOUND))
     return res.status(Status.OK).json({
       'status': 'success',
       'message': `User deleted!`,
@@ -67,7 +67,7 @@ exports.update = catchAsync(async (req, res, next)=> {
     let {id} = req.params
     let { name, email } = req.body
     const user = await User.updateOne({_id: id}, {name, email})
-    if (!user.nModified) throw new AppError(`Cannot update`, Status.BAD_REQUEST)
+    if (!user.nModified) next(new AppError(`Cannot update`, Status.BAD_REQUEST))
   
     return res.status(Status.OK).json({
       'status': 'success',
@@ -81,7 +81,7 @@ exports.getAllByName = catchAsync(async (req, res, next)=> {
     let { name } = req.query
     const users = await User.find({ name: { '$regex': `.*${name}.*`, '$options': 'i' } })
 
-    if (!users.length) throw new AppError('Data not Found!', Status.NOT_FOUND)
+    if (!users.length) next(new AppError('Data not Found!', Status.NOT_FOUND))
 
     return res.status(Status.OK).json({
       status: 'ok',
@@ -97,11 +97,11 @@ exports.userLogin = catchAsync(async (req, res, next)=> {
     const user = await User.findOne({email: email}).select('+password')
 
     if (!user) {
-      throw new AppError('User not found!', Status.NOT_FOUND)
+      next(new AppError('User not found!', Status.NOT_FOUND))
     }
 
     if (! await user.isValidPassword(password)) {
-      throw new AppError('Invalid email or password!', Status.UNAUTHORIZED)
+      next(new AppError('Invalid email or password!', Status.UNAUTHORIZED))
     }
 
 
