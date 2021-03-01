@@ -14,7 +14,7 @@ module.exports = {
 },
 
 throwError: (req, res, next)=> {
-  next(new AppError(`Cannot find ${req.originalUrl}`))
+  return next(new AppError(`Cannot find ${req.originalUrl}`))
 }
 
 }

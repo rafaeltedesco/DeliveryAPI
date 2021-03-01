@@ -1,6 +1,7 @@
 const express = require('express')
 const userController = require('./../controllers/user.controller')
-const authMiddleware = require('./../middleware/auth')
+const {authMiddleware} = require('./../middleware/auth')
+const {ROLE_TYPES} = require('./../utils/constants')
 
 const router = express.Router()
 
@@ -16,8 +17,11 @@ router.route('/')
 .get(userController.findAll)
 .post(userController.create)
 
+// router.get('/', authMiddleware(['ADMIN', 'MANAGER', 'SALES']), userController.getUsers);
+
+
 router.route('/:id')
-.get(authMiddleware.checkUserToken, userController.findOne)
+.get(authMiddleware([ROLE_TYPES.ADMIN, ROLE_TYPES.BUSINESS]), userController.findOne)
 .delete(userController.delete)
 .put(userController.update)
 
