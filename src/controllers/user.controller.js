@@ -106,7 +106,11 @@ exports.userLogin = catchAsync(async (req, res, next)=> {
 
 
     user.password = undefined
-    const payload = {...user}
+    const payload = {
+      id: user._id,
+      name: user.name,
+      role: user.permissions.role
+    }
     const token = generateToken(payload)
 
     return res.status(Status.OK).json({

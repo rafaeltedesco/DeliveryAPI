@@ -27,7 +27,7 @@ const authMiddleware = (...permissions) => {
       const user = await User.findById(id)
       
       if(!user) return next(new AppError('Invalid User', Status.NOT_FOUND))
-      
+
       if (!permissions.includes(user.permissions.role)) return next(new AppError('User dont have permission'))
 
       next()
