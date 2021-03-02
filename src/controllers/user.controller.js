@@ -106,7 +106,8 @@ exports.userLogin = catchAsync(async (req, res, next)=> {
 
 
     user.password = undefined
-    const token = generateToken({id: user._id})
+    const payload = {...user}
+    const token = generateToken(payload)
 
     return res.status(Status.OK).json({
       status: 'success',

@@ -19,20 +19,16 @@ const checkUserToken = catchAsync(async (req, res, next)=> {
     next()
   })
 
-const authMiddleware = permissions => {
+const authMiddleware = (...permissions) => {
   return catchAsync(async function (req, res, next) {
-      // find user 
+    
       let {id} = req.user.params
     
       const user = await User.findById(id)
       
       if(!user) return next(new AppError('Invalid User', Status.NOT_FOUND))
       
-      let userPermissions = permissions.filter(permission=> {
-        return user.permissions.role == permission
-      })
-
-      if (!userPermissions.length) return next(new AppError('User dont have permission'))
+      if (!permissions.includes(user.permissions.role)) return next(new AppError('User dont have permission'))
 
       next()
     })
