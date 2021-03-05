@@ -6,7 +6,7 @@ const {ROLE_TYPES} = require('./../utils/constants')
 const router = express.Router()
 
 router.route('/search')
-.all(checkUserToken, authMiddleware(ROLE_TYPES.MANAGER))
+
 .get(userController.getAllByName)
 
 
@@ -15,16 +15,21 @@ router.route('/login')
 
 
 router.route('/')
-.all(checkUserToken, authMiddleware(ROLE_TYPES.CLIENT))
-.get(userController.findAll)
+.get(checkUserToken, userController.findAll)
 .post(userController.create)
 
 
 router.route('/:id')
-.all(checkUserToken, authMiddleware(ROLE_TYPES.ADMIN, ROLE_TYPES.BUSINESS))
+.all(checkUserToken, authMiddleware(ROLE_TYPES.ADMIN, ROLE_TYPES.BUSINESS, ROLE_TYPES.CLIENT))
 .get(userController.findOne)
 .delete(userController.delete)
 .put(userController.update)
+
+router.route('/services/sendmail')
+.post(checkUserToken, userController.sendMail)
+
+router.route('/login/confirmaccount')
+.post(checkUserToken, userController.confirmAccount)
 
 
 module.exports = router

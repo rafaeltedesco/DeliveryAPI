@@ -14,7 +14,7 @@ mongoose.connection.on('disconnected', ()=> {
 })
 
 mongoose.connection.on('error', (err)=> {
-  console.log('Database err' + err)
+  console.error('Database err' + err)
 })
 
 mongoose.set('useCreateIndex', true)

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 const ROLE_TYPES = require('./../utils/constants')
+const generator = require('generate-password')
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -12,6 +13,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
+    unique: true,
     validate: {
       validator: function (email) {
           return new RegExp('^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+.[A-Za-z]{2,}$').test(email);
@@ -37,8 +39,15 @@ const userSchema = new mongoose.Schema({
         ],
         default: "CLIENT"
     }
-
-    }
+  },
+  confirmationCode: {
+    type: String,
+    select: false
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
+  }
 })
 
 userSchema.methods.generatePassword = (password) => {
@@ -54,6 +63,15 @@ userSchema.methods.isValidPassword = async function(password) {
   }
 }
 userSchema.pre('save', async function() {
+  this.confirmationCode = await generator.generate(
+    {
+      length: 4,
+      numbers: true,
+      symbols: false,
+      exclude: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      strict: false
+    })
+
   this.password = await this.generatePassword(this.password)
 })
 
