@@ -6,6 +6,8 @@ const { config } = require('./../../config')
 const catchAsync = require('./../utils/catchAsync')
 const AppError = require('./../utils/appError')
 const MailService = require('./../services/mailService')
+const validator = require('email-validator')
+
 
 const generateToken = (params={})=> {
   return jwt.sign({params}, config.SECRET, {
@@ -29,7 +31,15 @@ exports.findAll = catchAsync(async (req, res, next)=> {
 
 exports.create = catchAsync(async (req, res, next)=> {
     let { name, email, password } = req.body
-  
+    
+    if (!name || !email || !password) {
+      return next(new AppError('You must inform your Name, email and password', Status.BAD_REQUEST))
+    }
+
+    if (!validator.validate(email)) {
+      return next(new AppError('Invalid email', Status.BAD_REQUEST))
+    }
+
     const newUser = await User.create({name, email, password})
 
     const mailOptions = {
@@ -43,7 +53,7 @@ exports.create = catchAsync(async (req, res, next)=> {
     const mailer = await new MailService(mailOptions)
     const info = await mailer.sendMail()
 
-    if (!info) return next(new AppError('Cannot send e-mail'))
+    if (!info) return next(new AppError('Invalid e-mail', Status.BAD_REQUEST))
 
     const payload = {
       id: newUser._id,
@@ -93,6 +103,14 @@ exports.delete = catchAsync(async (req, res, next)=> {
 exports.update = catchAsync(async (req, res, next)=> {
     let {id} = req.params
     let { name, email } = req.body
+    if (!name || !email) {
+      return next(new AppError('You must inform your Name and email', Status.BAD_REQUEST))
+    }
+
+    if (!validator.validate(email)) {
+      return next(new AppError('Invalid email', Status.BAD_REQUEST))
+    }
+    
     const user = await User.updateOne({_id: id}, {name, email})
     if (!user.nModified) return next(new AppError(`Cannot update`, Status.BAD_REQUEST))
   
@@ -121,7 +139,14 @@ exports.getAllByName = catchAsync(async (req, res, next)=> {
 exports.userLogin = catchAsync(async (req, res, next)=> {
     let { email, password } = req.body
 
-    const user = await User.findOne({email: email}).select('+password')
+    if(!email || !password) {
+      return next(new AppError('You must inform your email and password to login', Status.BAD_REQUEST))
+    }
+    if (!validator.validate(email)) {
+      return next(new AppError('Invalid email', Status.BAD_REQUEST))
+    }
+
+    let user = await User.findOne({email: email}).select('+password')
 
     if (!user) {
       return next(new AppError('User not found!', Status.NOT_FOUND))
@@ -131,8 +156,11 @@ exports.userLogin = catchAsync(async (req, res, next)=> {
       return next(new AppError('Invalid email or password!', Status.UNAUTHORIZED))
     }
 
+    user.isVerified = true
+    user = await user.save()
 
     user.password = undefined
+    user.confirmationCode = undefined
     const payload = {
       id: user._id,
       name: user.name,
@@ -154,38 +182,23 @@ exports.userLogin = catchAsync(async (req, res, next)=> {
 exports.sendMail = catchAsync(async(req, res, next)=> {
   let {to, from, subject, text, html } = req.body
   if (!to || !from|| !subject || !text) return next(new AppError('You must inform all fields: to, from, subject, text', Status.BAD_REQUEST))
-  const mailOptions = {
-    from, 
-    to,
-    subject,
-    text, 
-    html
-  }
+  const mailOptions = {from, to, subject, text, html}
   const mailer = await new MailService(mailOptions)
   const info = await mailer.sendMail()
-  if (!info) return next(new AppError('Cannot send email!', Status.INTERNAL_SERVER_ERROR))
+  if (!info) return next(new AppError('Invalid email!', Status.BAD_REQUEST))
   return res.status(Status.OK).json({
     status: 'success',
     message: `e-mail sent to ${to}`,
-    data: {
-     info
-    }
   })
 })
 
 
 exports.confirmAccount = catchAsync(async(req, res, next)=> {
-    const authHeader = req.headers['authorization']
-    const token = authHeader && authHeader.split(' ')[1]
-    if (!token) {
-      return next(new AppError('Unauthorized access. A token must been sent', Status.UNAUTHORIZED))
-    }
-       
-    const decoded = await jwt.verify(token, config.SECRET)
-
+   
    let { code } = req.body
+   let { id } = req.user.params
 
-   const user = await User.findOne({_id: decoded.params.id})
+   const user = await User.findOne({_id: id}).select('+confirmationCode')
 
    if (!user) return next(new AppError('User not found!', Status.NOT_FOUND))
 
@@ -203,13 +216,89 @@ exports.confirmAccount = catchAsync(async(req, res, next)=> {
 
    const mailer = await new MailService(mailOptions)
    const info = await mailer.sendMail()
-   if (!info) return next(new AppError('Cannot send your email'))
+   if (!info) return next(new AppError('Invalid email', Status.BAD_REQUEST))
 
    return res.status(Status.OK).json({
      status: 'success',
-     message: `e-mail sent to ${mailOptions.to}`,
-     data: {
-       info
-     }
+     message: `e-mail sent to ${mailOptions.to}`
    })
+})
+
+
+exports.forgotPassword = catchAsync(async(req, res, next)=> {
+  let { email } = req.body
+
+  if (!validator.validate(email)) {
+    return next(new AppError('Invalid email', Status.BAD_REQUEST))
+  }
+
+  let user = await User.findOne({ email }).select('+forgotPassword')
+  if (!user) return next(new AppError('User not found', Status.NOT_FOUND))
+  user.forgotPassword = true
+  user = await user.save()
+
+  const mailOptions = {
+    from: 'dev.rafaeltedesco@gmail.com',
+    to: user.email,
+    subject: 'Reset your password',
+    text: 'Here is your code to reset your password',
+    html: `<h1>Password Reset</h1><hr>Here is your code to reset your password<br /><h3 align="center">${user.confirmationCode}</h3>`
+  }
+  const mailer = new MailService(mailOptions)
+  const info = mailer.sendMail()
+  if (!info) return next(new AppError('Invalid email', Status.BAD_REQUEST))
+  return res.status(Status.OK).json({
+    status: 'success',
+    message: `Verification Code sent to ${user.email}`
+  })
+})
+
+exports.resetPassword = catchAsync(async(req, res, next)=> {
+  let { code, email, password } = req.body
+
+  if (!code || !email || !password) {
+    return next(new AppError('You must inform your Code, email and New Password!', Status.BAD_REQUEST))
+  }
+  if (!validator.validate(email)) {
+    return next(new AppError('Invalid email', Status.BAD_REQUEST))
+  }
+
+  let user = await User.findOne({email}).select('+password +confirmationCode +forgotPassword')
+  if (!user) return next(new AppError('User not found', Status.NOT_FOUND))
+  
+  if (!user.forgotPassword) {
+    return next(new AppError('First your need inform that you forgot your password'))
+  }
+
+  if (!user.confirmationCode == code) {
+    return next(new AppError('Confirmation Code Invalid', Status.BAD_REQUEST))    
+  }
+  
+  user.password = password
+  user.forgotPassword = false
+  user.isVerified = true
+  user = await user.save()
+  
+  user.password = undefined
+  user.confirmationCode = undefined
+  user.forgotPassword = undefined
+
+  const payload = {
+    id: user._id,
+    name: user.name,
+    role: user.permissions.role
+  }
+  const token = generateToken(payload)
+
+  return res.status(200).json({
+    status: 'success',
+    message: 'Password updated',
+    data: {
+      user,
+      token
+    }
+  })
+
+
+
 })

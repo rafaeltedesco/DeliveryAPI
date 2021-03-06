@@ -47,6 +47,11 @@ const userSchema = new mongoose.Schema({
   isVerified: {
     type: Boolean,
     default: false
+  },
+  forgotPassword: {
+    type: Boolean,
+    select: false,
+    default: false
   }
 })
 
@@ -59,20 +64,36 @@ userSchema.methods.isValidPassword = async function(password) {
     return await bcrypt.compare(password.toString(), this.password)
   }
   catch(err) {
-    console.log(err.message)
+    console.error(err.message)
   }
 }
-userSchema.pre('save', async function() {
-  this.confirmationCode = await generator.generate(
-    {
+
+userSchema.methods.generateEmailCode = async function() {
+  try {
+    return await generator.generate({
       length: 4,
       numbers: true,
-      symbols: false,
+      symbolos: false,
       exclude: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
       strict: false
     })
+  }
+  catch(err) {
+  console.error(err.message)
+  }
+}
 
-  this.password = await this.generatePassword(this.password)
+
+userSchema.pre('save', async function() {
+  try {
+    this.confirmationCode = await this.generateEmailCode()
+    if (this.isModified('password')) {
+      this.password = await this.generatePassword(this.password)
+    }
+  }
+  catch(err) {
+    console.error(err.message)
+  }
 })
 
 module.exports = mongoose.model('User', userSchema)

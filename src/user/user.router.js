@@ -13,6 +13,18 @@ router.route('/search')
 router.route('/login')
 .post(userController.userLogin)
 
+router.route('/confirmaccount')
+.post(checkUserToken, userController.confirmAccount)
+
+router.route('/forgot')
+.post(userController.forgotPassword)
+
+router.route('/resetpassword')
+.post(userController.resetPassword)
+
+router.route('/sendmail')
+.post(checkUserToken, userController.sendMail)
+
 
 router.route('/')
 .get(checkUserToken, userController.findAll)
@@ -25,11 +37,6 @@ router.route('/:id')
 .delete(userController.delete)
 .put(userController.update)
 
-router.route('/services/sendmail')
-.post(checkUserToken, userController.sendMail)
-
-router.route('/login/confirmaccount')
-.post(checkUserToken, userController.confirmAccount)
 
 
 module.exports = router
