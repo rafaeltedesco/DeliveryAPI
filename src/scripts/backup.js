@@ -27,7 +27,8 @@ const saveDataSync = (csvData, _name='backup_')=> {
 exports.dumpData = async()=> {
   try {
     const data = await getData()
-    const csvData = await converter.json2csvAsync(data)
+    const dataObj = data.map(doc=>doc.toObject())
+    const csvData = await converter.json2csvAsync(dataObj)
     saveDataSync(csvData)
     console.log('User data dumped to csv')
   }
