@@ -1,6 +1,5 @@
 const User = require('./../models/user.model')
 const converter = require('json-2-csv')
-const db = require('./../database/db')
 const fs = require('fs')
 
 
@@ -10,7 +9,6 @@ const getData = async () => {
     if (!userData) {
       throw new Error('User Data Not Found')
     }
-    db.close()
     return userData
   }
   catch(err) {
@@ -19,10 +17,10 @@ const getData = async () => {
 }
 
 
-const saveDataSync = (csvData)=> {
+const saveDataSync = (csvData, _name='backup_')=> {
   let path = `${__dirname}/backup`
   !fs.existsSync(path) && fs.mkdirSync(path)
-  fs.writeFileSync(`${path}/${Date.now()}.csv`, csvData)
+  fs.writeFileSync(`${path}/${_name}${Date.now()}.csv`, csvData)
 
 }
 
