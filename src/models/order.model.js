@@ -27,5 +27,6 @@ const orderSchema = new mongoose.Schema( {
     type: Date,
     default: Date.now
   }
-
 })
+
+module.exports = mongoose.Model('Order', orderSchema)
