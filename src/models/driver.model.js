@@ -1,15 +1,11 @@
 const mongoose = require('mongoose')
 
+
 const driverSchema = new mongoose.Schema( {
-  name: {
-    type: String,
-    required: true,
-    minlength: 3,
-    maxlength: 255
-  },
   available: {
     type: Boolean,
-    required: true
+    required: true,
+    default: true
   },
   orders: [{
     type: mongoose.Schema.Types.ObjectId,

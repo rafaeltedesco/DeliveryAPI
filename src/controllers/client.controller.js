@@ -12,6 +12,7 @@ exports.getClients = catchAsync(async (req, res, next) => {
   
   return res.status(Status.OK).json({
     status: 'success',
+    results: clients.length,
     message: `${clients.length} clients found!`,
     data: {
       clients

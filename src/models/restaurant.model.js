@@ -11,7 +11,7 @@ const restaurantSchema = new mongoose.Schema( {
   }],
   employees: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Restaurant'
+    ref: 'Employee'
   }],
   user: {
     type: mongoose.Schema.Types.ObjectId,

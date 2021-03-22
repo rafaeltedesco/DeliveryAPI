@@ -4,5 +4,7 @@ const router = express.Router()
 
 
 router.route('/')
-.post(restaurantController.createClient)
-.get(restaurantController.getClients)
+.post(restaurantController.createRestaurant)
+.get(restaurantController.getRestaurants)
+
+module.exports = router
